@@ -14,6 +14,7 @@ import pytest
 
 from gateway.config import Platform, PlatformConfig
 from gateway.platforms.base import BasePlatformAdapter, MessageEvent, MessageType, SendResult
+from gateway.platforms.base import _thread_metadata_for_source
 from gateway.run import GatewayRunner
 from gateway.session import SessionSource, build_session_key
 
@@ -139,8 +140,21 @@ async def test_base_adapter_preserves_feishu_thread_reply_anchor_for_image_media
     adapter.send_multiple_images.assert_awaited_once()
     assert adapter.send_multiple_images.await_args.kwargs["metadata"] == {
         "thread_id": "omt-thread",
-        "reply_to_message_id": "om-parent",
+        "reply_to_message_id": "msg-1",
+        "notify": True,
     }
+
+
+
+def test_thread_metadata_keeps_reply_anchor_feishu_specific():
+    source = SessionSource(
+        platform=Platform.SLACK,
+        chat_id="chat-1",
+        chat_type="group",
+        thread_id="thread-1",
+    )
+
+    assert _thread_metadata_for_source(source, "msg-1") == {"thread_id": "thread-1"}
 
 
 def _fake_runner(thread_meta):
@@ -183,7 +197,7 @@ async def test_streaming_delivery_preserves_feishu_thread_reply_anchor_for_image
     adapter.send_multiple_images.assert_awaited_once()
     assert adapter.send_multiple_images.await_args.kwargs["metadata"] == {
         "thread_id": "omt-thread",
-        "reply_to_message_id": "om-parent",
+        "reply_to_message_id": "msg-1",
     }
 
 
